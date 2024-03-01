@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Product Details{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        /* Details styles */
+        dl {
+            margin-bottom: 20px;
+        }
+        dt {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        dd {
+            margin-bottom: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <h1>Product Details</h1>
+    <dl>
+        <dt>Name</dt>
+        <dd>{{ product.name }}</dd>
+        <dt>Price</dt>
+        <dd>{{ product.price }}</dd>
+        <dt>Date of Fabrication</dt>
+        <dd>{{ product.datefabrication|date('Y-m-d') }}</dd>
+        <dt>Quantity</dt>
+        <dd>{{ product.quantite }}</dd>
+    </dl>
+    <a href="{{ path('product_index') }}" class="btn btn-secondary">Back to List</a>
+{% endblock %}

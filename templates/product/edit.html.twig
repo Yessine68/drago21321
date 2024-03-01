@@ -1,0 +1,14 @@
+{# templates/product/edit.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Product{% endblock %}
+
+{% block body %}
+    <h1>Edit Product</h1>
+    {{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button type="submit">Update</button>
+    {{ form_end(form) }}
+{% endblock %}
+
