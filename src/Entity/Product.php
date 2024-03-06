@@ -114,8 +114,7 @@ class Product
     #[ORM\Column(type:"string", length:255, nullable:true)]
     private $image;
 
-    #[ORM\ManyToOne(inversedBy: 'product')]
-    private ?Panier $panier = null;
+   
 
     // existing getters and setters
 
@@ -131,15 +130,4 @@ class Product
         return $this;
     }
 
-    public function getPanier(): ?Panier
-    {
-        return $this->panier;
-    }
-
-    public function setPanier(?Panier $panier): static
-    {
-        $this->panier = $panier;
-
-        return $this;
-    }
 }

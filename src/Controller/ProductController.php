@@ -13,7 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 #[Route('/product')]
 class ProductController extends AbstractController
 {
@@ -23,6 +26,99 @@ class ProductController extends AbstractController
     {
         $this->entityManager = $entityManager;
     }
+    #[Route('/back', name: 'product_back', methods: ['GET'])]
+    public function back(): Response
+    {
+        $products = $this->entityManager->getRepository(Product::class)->findAll();
+
+        return $this->render('product/back.html.twig', [
+            'products' => $products,
+        ]);
+    }
+    #[Route('/generate-pdf/{id}', name: 'generate_pdf')]    
+    public function generatePdf(int $id): Response
+{
+    // Fetch the product from the database based on the ID
+    $product = $this->entityManager->getRepository(Product::class)->find($id);
+
+
+
+    // Generate HTML content for the PDF
+    $html = $this->renderView('product/pdf_template.html.twig', [
+        'product' => $product,
+    ]);
+
+    // Configure Dompdf options
+    $options = new Options();
+    $options->set('defaultFont', 'Arial');
+
+    // Instantiate Dompdf with the configured options
+    $dompdf = new Dompdf($options);
+
+    // Load HTML content into Dompdf
+    $dompdf->loadHtml($html);
+
+    // Render the PDF
+    $dompdf->render();
+
+    // Generate the PDF file content
+    $pdfContent = $dompdf->output();
+
+    // Create a Symfony Response object with the PDF content
+    $response = new Response($pdfContent);
+
+    // Set the response headers for PDF content
+    $response->headers->set('Content-Type', 'application/pdf');
+    $response->headers->set('Content-Disposition', 'attachment; filename="product_' . $id . '.pdf"');
+
+    return $response;
+}    
+
+
+
+
+    #[Route('/generate-excel', name: 'generate_excel')]
+public function generateExcel(): Response
+{
+    // Fetch the list of products from the database
+    $products = $this->entityManager->getRepository(Product::class)->findAll();
+
+    // Create a new PHPExcel object
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Add column headers
+    $sheet->setCellValue('A1', 'Name')
+          ->setCellValue('B1', 'Price')
+          ->setCellValue('C1', 'Date of Fabrication')
+          ->setCellValue('D1', 'Quantity')
+          ->setCellValue('E1', 'Likes');
+
+    // Add product data to the spreadsheet
+    $row = 2;
+    foreach ($products as $product) {
+        $sheet->setCellValue('A' . $row, $product->getName())
+              ->setCellValue('B' . $row, $product->getPrice())
+              ->setCellValue('C' . $row, $product->getDatefabrication()->format('Y-m-d'))
+              ->setCellValue('D' . $row, $product->getQuantite())
+              ->setCellValue('E' . $row, $product->getLikes());
+        $row++;
+    }
+
+    // Create a new Excel writer object
+    $writer = new Xlsx($spreadsheet);
+
+    // Save the Excel file to a temporary location
+    $filePath = sys_get_temp_dir() . '/products.xlsx';
+    $writer->save($filePath);
+
+    // Send the Excel file as a response
+    $response = new Response(file_get_contents($filePath));
+    $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    $response->headers->set('Content-Disposition', 'attachment;filename="products.xlsx"');
+    $response->headers->set('Cache-Control', 'max-age=0');
+    return $response;
+}
 
     #[Route('/all', name: 'product_all', methods: ['GET'])]
     public function all(): JsonResponse
@@ -94,10 +190,27 @@ class ProductController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile $file */
+            $file = $form->get('image')->getData();
+
+            // If a file was uploaded
+            if ($file) {
+                $filename = uniqid() . '.' . $file->guessExtension();
+
+                // Move the file to the directory where brochures are stored
+                $file->move(
+                    'product_images',
+                    $filename
+                );
+
+                // Update the 'image' property to store the image file name
+                // instead of its contents
+                $product->setImage($filename);
+            }
             $this->entityManager->persist($product);
             $this->entityManager->flush();
 
-            return $this->redirectToRoute('product_index');
+            return $this->redirectToRoute('shop');
         }
 
         return $this->render('product/new.html.twig', [
@@ -124,18 +237,35 @@ class ProductController extends AbstractController
     public function edit(Request $request, int $id): Response
     {
         $product = $this->entityManager->getRepository(Product::class)->find($id);
-
-        if (!$product) {
-            throw $this->createNotFoundException('Product not found');
-        }
-
         $form = $this->createForm(ProductType::class, $product);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if ($form->get('image')->getData()) {
+                $file = $form->get('image')->getData();
+
+                // If a file was uploaded
+                if ($file) {
+                    $filename = uniqid() . '.' . $file->guessExtension();
+
+                    // Move the file to the directory where brochures are stored
+                    $file->move(
+                        'product_images',
+                        $filename
+                    );
+
+                    // Update the 'image' property to store the image file name
+                    // instead of its contents
+                    $product->setImage($filename);
+                }
+            } else {
+                // Keep the old profile picture
+                $product->setImage($product->setImage());
+            }
+            $this->entityManager->persist($product);
             $this->entityManager->flush();
 
-            return $this->redirectToRoute('product_index');
+            return $this->redirectToRoute('product_back');
         }
 
         return $this->render('product/edit.html.twig', [
@@ -156,20 +286,11 @@ class ProductController extends AbstractController
         $this->entityManager->remove($product);
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('product_index');
+        return $this->redirectToRoute('product_back');
     }
 
 
-    #[Route('/back', name: 'product_back', methods: ['GET'])]
-    public function back(): Response
-    {
-        $products = $this->entityManager->getRepository(Product::class)->findAll();
-
-        return $this->render('product/back.html.twig', [
-            'products' => $products,
-        ]);
-    }
-
+    
 
     #[Route('/routes', name: 'routes')]
 

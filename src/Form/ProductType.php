@@ -4,13 +4,13 @@ namespace App\Form;
 
 use App\Entity\Product;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\FileType; // Import FileType
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Range;
-
 
 class ProductType extends AbstractType
 {
@@ -19,11 +19,11 @@ class ProductType extends AbstractType
         $builder
             ->add('name', TextType::class, [
                 'label' => 'Name',
-                'required'=>True
+                'required' => true
             ])
             ->add('price', IntegerType::class, [
                 'label' => 'Price',
-                'required'=>True, 
+                'required' => true,
                 'constraints' => [
                     new Range([
                         'min' => 5,
@@ -36,12 +36,12 @@ class ProductType extends AbstractType
             ->add('datefabrication', DateType::class, [
                 'label' => 'Date of Fabrication',
                 'widget' => 'single_text',
-                'html5' => false,
                 'format' => 'yyyy-MM-dd',
+                'attr' => ['class' => 'js-datepicker'],
             ])
             ->add('quantite', IntegerType::class, [
                 'label' => 'quantite',
-                'required'=>True,
+                'required' => true,
                 'constraints' => [
                     new Range([
                         'min' => 10,
@@ -51,10 +51,10 @@ class ProductType extends AbstractType
                     ]),
                 ],
             ])
-            ->add('image', TextType::class, [
+            ->add('image', FileType::class, [ // Change TextType to FileType
                 'label' => 'Product Image',
                 'required' => false,
-                
+                'mapped' => false, // This option tells Symfony not to map this field to any property of the entity
             ]);
     }
 
@@ -65,4 +65,3 @@ class ProductType extends AbstractType
         ]);
     }
 }
-
