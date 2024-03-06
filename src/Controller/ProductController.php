@@ -45,6 +45,34 @@ class ProductController extends AbstractController
         return new JsonResponse($serializedProducts);
     }
 
+
+    #[Route('/shop', name: 'shop', methods: ['GET'])]
+    public function shop(EntityManagerInterface $entityManager): Response
+    {
+        $products = $entityManager->getRepository(Product::class)->findAll();
+    
+        // Serialize products to JSON format
+        $serializedProducts = [];
+        foreach ($products as $product) {
+            $serializedProducts[] = [
+                'id' => $product->getId(),
+                'name' => $product->getName(),
+                'price' => $product->getPrice(),
+                'datefabrication'=> $product->getDatefabrication(),
+                'quantity'=> $product->getQuantite(),
+                'image'=> $product->getImage(),
+                'likes'=>$product->getLikes(),
+                // Add more fields as needed
+            ];
+        }
+    
+        return $this->render('product/shop.html.twig', [
+            'products' => $serializedProducts,
+        ]);
+    }
+
+    
+
     #[Route('/new', name: 'product_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
@@ -132,7 +160,7 @@ class ProductController extends AbstractController
         return $response;
     }
     #[Route('/{id}/likes', name: 'product_likes', methods: ['POST'])]
-    public function likeProduct(Request $request, $id): JsonResponse
+    public function likeProduct(Request $request, $id): Response
     {
         $product = $this->entityManager->getRepository(Product::class)->find($id);
 
@@ -149,7 +177,11 @@ class ProductController extends AbstractController
         $this->entityManager->persist($product);
         $this->entityManager->flush();
 
-        return $this->json(['likes' => $likes]);
+        $products = $this->entityManager->getRepository(Product::class)->findAll();
+
+        return $this->render('product/shop.html.twig', [
+            'products' => $products,
+        ]);    
     }
 
     public function sortProducts(Request $request) :JsonResponse
