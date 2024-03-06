@@ -131,7 +131,12 @@
 							<form id="like-form-{{ product.id }}" action="{{ path('product_likes', {'id': product.id}) }}" method="POST">
 								<button type="submit" class="like-button">Like</button>
 							</form>
+							<form action="{{ path('app_panier_add', {'productId': product.id}) }}" method="POST">
+							<button type="submit" class="like-button">Add to Cart</button>
+						</form>
+
 						</div>
+						
 					</div>
 				{% endfor %}
 			</div>
