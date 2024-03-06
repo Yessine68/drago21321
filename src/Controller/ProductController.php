@@ -159,6 +159,7 @@ class ProductController extends AbstractController
 
         return $response;
     }
+
     #[Route('/{id}/likes', name: 'product_likes', methods: ['POST'])]
     public function likeProduct(Request $request, $id): Response
     {
@@ -184,6 +185,32 @@ class ProductController extends AbstractController
         ]);    
     }
 
+    #[Route('/products/sort', name: 'sort_products', methods: ['GET'])]
+    public function sortProduct(Request $request): Response
+    {
+        try {
+            $sortBy = $request->query->get('sort', 'likes'); // Default sort by likes
+            $products = $this->entityManager->getRepository(Product::class)->findBy([], [$sortBy => 'DESC']);
+            $data = [];
+            foreach ($products as $product) {
+                $data[] = [
+                    'id' => $product->getId(),
+                    'name' => $product->getName(),
+                    'price' => $product->getPrice(),
+                    'datefabrication'=> $product->getDatefabrication(),
+                    'quantity'=> $product->getQuantite(),
+                    'image'=> $product->getImage(),
+                    'likes'=>$product->getLikes(),
+                ];
+            }
+
+            return $this->render('product/shop.html.twig', [
+                'products' => $data,
+            ]);        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public function sortProducts(Request $request) :JsonResponse
     {
         try {
@@ -206,6 +233,9 @@ class ProductController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    
     #[Route('/', name: 'product_index', methods: ['GET'])]
     public function index(): Response
     {
