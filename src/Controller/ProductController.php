@@ -158,6 +158,19 @@ class ProductController extends AbstractController
 
         return $this->redirectToRoute('product_index');
     }
+
+
+    #[Route('/back', name: 'product_back', methods: ['GET'])]
+    public function back(): Response
+    {
+        $products = $this->entityManager->getRepository(Product::class)->findAll();
+
+        return $this->render('product/back.html.twig', [
+            'products' => $products,
+        ]);
+    }
+
+
     #[Route('/routes', name: 'routes')]
 
     public function myAction(): Response
